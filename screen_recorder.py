@@ -31,6 +31,7 @@ class ScreenRecord:
     def stop_recording(self, cleanup=True):
         if self.record:
             self.record = False
+            time.sleep(2)
             if cleanup:
                 current_file, temp_location = self.generate_file_and_temp_location()
                 if hasattr(self, "imgs"):
@@ -47,7 +48,7 @@ class ScreenRecord:
     def record_screen(self):
         if self.driver is not None:
             self.imgs = []
-            recorder_thread = threading.Thread(target=self.record_function, name="Screen Recorder", args=[self.imgs])
+            recorder_thread = threading.Thread(target=self.__record_function, name="Screen Recorder", args=[self.imgs])
             recorder_thread.start()
 
     @staticmethod
@@ -62,12 +63,17 @@ class ScreenRecord:
 
     def generate_file_and_temp_location(self):
         current_file = self.file_name
-        temp_location = current_file + "\\temp_images"
+        if "\\" not in current_file or "/" not in current_file:
+            temp_location = "temp_images"
+        elif "." in current_file:
+            temp_location = current_file[:current_file.rindex(".")] + "\\temp_images"
+        else:
+            temp_location = current_file + "\\temp_images"
         if not current_file.lower().endswith(self.video_format):
-            current_file += ("\\screen_recording." + self.video_format)
+            current_file += (f"\\{current_file}." + self.video_format)
         return current_file, temp_location
 
-    def record_function(self, imgs):
+    def __record_function(self, imgs):
         # ignore blank frames on startup before window is loaded
         while not self.driver.current_url or self.driver.current_url == "data:,":
             pass
@@ -135,7 +141,7 @@ class ScreenRecord:
                 except Exception:
                     print("Could not determine video resolution, exiting function...")
                     return None
-        video_format = output_file[output_file.rindex(".") + 1:]
+        video_format = self.video_format
         if video_format.lower() == "mp4":
             video_format += "v"
         elif video_format.lower() == "avi":
@@ -146,7 +152,6 @@ class ScreenRecord:
             else:
                 print(f"File '{output_file}' already exists, and will NOT be overwritten, exiting function.")
                 return None
-
         start = default_timer()
         out = cv2.VideoWriter(output_file, cv2.VideoWriter_fourcc(*video_format.lower()), self.fps, (width, height))
         for idx, file in enumerate(self.progress_bar(files, prefix="Progress:", suffix="Complete", length=50)):
