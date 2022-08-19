@@ -17,7 +17,7 @@ class ScreenRecord:
     """
     @params:
         driver       - Required  : WebDriver object (WebDriver)
-        file_name    - Optional  : String representing a file path for output (Str)
+        file_name    - Required  : String representing a file path for output (Str)
         video_format - Optional  : String specifying output format of video - mp4/avi (Str)
         fps          - Optional  : int representing frames per second (experimental) (Int)
     """
