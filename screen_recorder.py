@@ -14,9 +14,14 @@ import threading
 
 
 class ScreenRecord:
+    """
+    @params:
+        driver       - Required  : WebDriver object (WebDriver)
+        file_name    - Optional  : String representing a file path for output (Str)
+        video_format - Optional  : String specifying output format of video - mp4/avi (Str)
+        fps          - Optional  : int representing frames per second (experimental) (Int)
+    """
     def __init__(self, **kwargs):
-        #Driver required to take screenshots, video_format optional and can be arrived from file_name.
-        #file_name can be a full path.
         self.driver = kwargs["driver"]
         self.file_name = kwargs.get("file_name")
         self.video_format = kwargs.get("video_format", None)
@@ -29,11 +34,15 @@ class ScreenRecord:
         self.record = False
 
     def stop_recording(self, cleanup=True):
+        """
+            @params:
+                cleanup      - Optional  : Determines if verification and temp file delete occurs (default is True) (Boolean)
+        """
         if self.record:
             self.record = False
             time.sleep(2)
             if cleanup:
-                current_file, temp_location = self.generate_file_and_temp_location()
+                current_file, temp_location = self.__generate_file_and_temp_location()
                 if hasattr(self, "imgs"):
                     if self.imgs:
                         if not os.path.exists(temp_location):
@@ -46,6 +55,11 @@ class ScreenRecord:
                 print("Attributes missing for class, video was not compiled.")
 
     def record_screen(self):
+        """
+            Begins screen recording, utilises attributes set within the class on initialisation.
+            @params:
+                None
+        """
         if self.driver is not None:
             self.imgs = []
             recorder_thread = threading.Thread(target=self.__record_function, name="Screen Recorder", args=[self.imgs])
@@ -53,6 +67,14 @@ class ScreenRecord:
 
     @staticmethod
     def get_opencv_img_from_bytes(byte_string, flags=None):
+        """
+            Converts bytes to OpenCV Img object
+            @params:
+                byte_string    - Required  : Bytes object representing image data. (bytes)
+                flags          - Optional  : Specifies cv2 flag for image (cv2 Flag)
+            @returns:
+                OpenCV img
+        """
         if flags in [None, False]:
             try:
                 flags = cv2.IMREAD_COLOR
@@ -61,7 +83,14 @@ class ScreenRecord:
         bytes_as_np_array = np.fromstring(byte_string, np.uint8)
         return cv2.imdecode(bytes_as_np_array, flags)
 
-    def generate_file_and_temp_location(self):
+    def __generate_file_and_temp_location(self):
+        """
+            Generate correct file location and folder location for temporary files
+            @params:
+                None
+            @returns:
+                tuple containing file location and folder location for temporary files respectively.
+        """
         current_file = self.file_name
         if "\\" not in current_file or "/" not in current_file:
             temp_location = "temp_images"
@@ -74,6 +103,13 @@ class ScreenRecord:
         return current_file, temp_location
 
     def __record_function(self, imgs):
+        """
+            Private method triggered within an individual thread to handle screen recording seperately.
+            @params:
+                imgs    - Required  : List acting as a container for byte strings representing screenshots (List)
+            @returns:
+                List of generated imgs
+        """
         # ignore blank frames on startup before window is loaded
         while not self.driver.current_url or self.driver.current_url == "data:,":
             pass
@@ -96,6 +132,14 @@ class ScreenRecord:
         return imgs
 
     def imgs_to_file_list(self, imgs, temp_location):
+        """
+            Converts list of OpenCV Imgs to rendered images at a location
+            @params:
+                imgs             - Required  : List of Bytes objects representing image data. (List)
+                temp_location    - Required  : Filepath for rendered images (String)
+            @returns:
+            Tuple of 3 values - list of rendered image filepaths, height of image, width of image
+        """
         width = False
         height = False
         files = []
@@ -109,6 +153,13 @@ class ScreenRecord:
 
     @staticmethod
     def convert_to_img(data_input):
+        """
+            Converts strings and bytes to OpenCV Imgs
+            @params:
+                data_input       - Required  : String representing file_path of an image, or Bytes representing Image data. (String/Bytes)
+            @returns:
+                cv2 Image if String as input, numpy array if bytes as input, or raw input returned if input is not str or bytes
+        """
         if isinstance(input, str):
             try:
                 return cv2.imread(data_input)
@@ -123,14 +174,35 @@ class ScreenRecord:
             return data_input
 
     def create_image_from_bytes(self, bytes_obj, root, file_name, extension="png"):
+        """
+            Converts bytes to image file on disk
+            @params:
+                bytes_obj  - Required  : Bytes representing Image data. (Bytes)
+                root       - Required  : Root of file path. (String)
+                file_name  - Required  : Name of output file. (String)
+                extension  - Optional  : String representing video format output - mp4/avi (String)
+            @return:
+                String of file path of new Image
+        """
         img_path = f"{root}\\{file_name}.{extension}"
-        f = open(img_path, "wb")
-        f.write(bytes_obj)
-        f.close()
+        with open(img_path, "wb") as f:
+            f.write(bytes_obj)
         return img_path
 
     def write_file_list_to_video_file(self, files, height=None, width=None, output_file=None, overwrite=True,
                                       temp_location=None):
+        """
+            Writes a list of images that exist on disk to video file.
+            @params:
+                files         - Required  : Bytes representing Image data. (List)
+                height        - Optional  : Int representing height of video. (int)
+                width         - Optional  : Int representing width of video. (int)
+                output_file   - Optional  : String representing filename of output - mp4/avi (String)
+                overwrite     - Optional  : Boolean determining whether an existing file of the same name should be overwritten (Boolean)
+                temp_location - Optional  : String representing location of temporary files - mp4/avi (String)
+            @return:
+                None
+        """
         print("Compiling screen recording.")
         if height is None or width is None:
             try:
@@ -173,12 +245,28 @@ class ScreenRecord:
         print(f"Video compilation complete - Duration: {str(timedelta(seconds=end - start))}")
 
     def img_path_list_to_cv2_img_list(self, imgs):
+        """
+            Converts list of rendered images on disk to list of OpenCV images at a location
+            @params:
+                imgs             - Required  : List of Bytes objects representing image data. (List)
+            @return:
+                List of OpenCV images
+        """
         res = []
         for img_path in imgs:
             res.append(cv2.imread(img_path))
         return res
 
     def create_video_from_img_folder(self, img_folder, output_file, temp_location=None):
+        """
+            Converts folder of imgs to video
+            @params:
+                img_folder       - Required  : Filepath containing images to be rendered to video. (String)
+                output_file      - Required  : Filepath for output file (String)
+                temp_location    - Optional  : Filepath for temporary files (String)
+            @returns:
+                None
+        """
         list_of_files = list(filter(os.path.isfile, glob.glob(img_folder + '*.png')))
         list_of_files.sort(key=lambda f: int(re.sub('\D', '', f)))
         if list_of_files:
@@ -188,6 +276,14 @@ class ScreenRecord:
             self.validate_video_creation(output_file, temp_location)
 
     def validate_video_creation(self, output_file, temp_location=None):
+        """
+            Validates video was created and is populated, can optionally delete the folder of temporary data.
+            @params:
+                output_file      - Required  : Filepath containing rendered video. (String)
+                temp_location    - Optional  : Filepath for temporary files (String)
+            @return:
+                None
+        """
         if not os.path.exists(output_file):
             print(f"File '{output_file}' was NOT created.")
         elif os.stat(output_file).st_size == 0:
@@ -214,6 +310,8 @@ class ScreenRecord:
             length      - Optional  : character length of bar (Int)
             fill        - Optional  : bar fill character (Str)
             printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+        @return:
+            None
         """
         total = len(iterable)
 
