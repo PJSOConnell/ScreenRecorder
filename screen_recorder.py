@@ -1,6 +1,4 @@
-import os
-import time
-import re
+import os, time, re
 from timeit import default_timer
 from datetime import timedelta
 import cv2
@@ -12,24 +10,20 @@ import pyautogui
 import glob
 import threading
 
-
 class ScreenRecord:
     """
     @params:
-        driver       - Required  : WebDriver object (WebDriver)
-        file_name    - Required  : String representing a file path for output (Str)
-        video_format - Optional  : String specifying output format of video - mp4/avi (Str)
-        fps          - Optional  : int representing frames per second (experimental) (Int)
+        driver         - Required  : WebDriver object (WebDriver)
+        file_path_root - Optional  : Path representing a file path for output (Path)
+        file_name      - Optional  : String representing a file name for output (Str)
+        video_format   - Optional  : String specifying output format of video - mp4/avi (Str)
+        fps            - Optional  : int representing frames per second (experimental) (Int)
     """
     def __init__(self, **kwargs):
-        self.driver = kwargs["driver"]
-        self.file_name = kwargs.get("file_name")
-        self.video_format = kwargs.get("video_format", None)
-        if self.video_format is None:
-            if self.file_name:
-                self.video_format = self.file_name[self.file_name.rindex(".")+1:]
-        elif self.video_format.startswith("."):
-            self.video_format = self.video_format[1:]
+        self.driver = kwargs.get("driver", None)
+        self.file_path_root = kwargs.get("file_path_root", None)
+        self.file_name = kwargs.get("file_name", "output")
+        self.video_format = kwargs.get("video_format", "mp4")
         self.fps = int(kwargs.get("fps", 4))
         self.record = False
 
@@ -54,6 +48,7 @@ class ScreenRecord:
             else:
                 print("Attributes missing for class, video was not compiled.")
 
+
     def record_screen(self):
         """
             Begins screen recording, utilises attributes set within the class on initialisation.
@@ -61,6 +56,7 @@ class ScreenRecord:
                 None
         """
         if self.driver is not None:
+            print("Starting recording process...")
             self.imgs = []
             recorder_thread = threading.Thread(target=self.__record_function, name="Screen Recorder", args=[self.imgs])
             recorder_thread.start()
@@ -91,15 +87,14 @@ class ScreenRecord:
             @returns:
                 tuple containing file location and folder location for temporary files respectively.
         """
+        temp_location = "temp_images"
         current_file = self.file_name
-        if "\\" not in current_file or "/" not in current_file:
-            temp_location = "temp_images"
-        elif "." in current_file:
-            temp_location = current_file[:current_file.rindex(".")] + "\\temp_images"
-        else:
-            temp_location = current_file + "\\temp_images"
         if not current_file.lower().endswith(self.video_format):
-            current_file += (f"\\{current_file}." + self.video_format)
+            current_file = (f"{current_file}.{self.video_format}")
+        if self.file_path_root is not None:
+            if self.file_path_root.exists():
+                current_file = str(self.file_path_root / current_file)
+                temp_location = str(self.file_path_root / "temp_images")
         return current_file, temp_location
 
     def __record_function(self, imgs):
@@ -130,6 +125,7 @@ class ScreenRecord:
                 imgs.append(img)
         print("Stopping recording...")
         return imgs
+
 
     def imgs_to_file_list(self, imgs, temp_location):
         """
@@ -224,9 +220,10 @@ class ScreenRecord:
             else:
                 print(f"File '{output_file}' already exists, and will NOT be overwritten, exiting function.")
                 return None
+
         start = default_timer()
         out = cv2.VideoWriter(output_file, cv2.VideoWriter_fourcc(*video_format.lower()), self.fps, (width, height))
-        for idx, file in enumerate(self.progress_bar(files, prefix="Progress:", suffix="Complete", length=50)):
+        for idx,file in enumerate(self.progress_bar(files, prefix="Progress:", suffix="Complete", length=50)):
             try:
                 try:
                     if temp_location:
@@ -330,4 +327,3 @@ class ScreenRecord:
             print_progress_bar(i + 1)
         # Print New Line on Complete
         print()
-
