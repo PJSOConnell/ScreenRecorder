@@ -10,7 +10,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 import time
 
 def main():
-    output_file = "C:\\Users\\menza\\Desktop\\test_output.mp4"
+    output_file = "C:\\Users\\test_output.mp4"
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
     screen_recorder = ScreenRecord(driver=driver, file_name=output_file)
     try:
