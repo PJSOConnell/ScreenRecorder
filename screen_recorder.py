@@ -10,7 +10,7 @@ import pyautogui
 import glob
 import threading
 from loguru import logger
-
+import humanize
 
 class ScreenRecord:
     """
@@ -22,7 +22,6 @@ class ScreenRecord:
         fps            - Optional  : int representing frames per second (experimental) (Int)
     """
     def __init__(self, **kwargs):
-        self.logger = kwargs.get("logger", logger)
         self.driver = kwargs.get("driver", None)
         self.file_path_root = kwargs.get("file_path_root", None)
         self.file_name = kwargs.get("file_name", "output")
@@ -49,7 +48,7 @@ class ScreenRecord:
                         self.validate_video_creation(current_file, temp_location)
                         delattr(self, "imgs")
             else:
-                self.logger.error("Attributes missing for class, video was not compiled.")
+                logger.error("Attributes missing for class, video was not compiled.")
 
 
     def record_screen(self):
@@ -59,7 +58,7 @@ class ScreenRecord:
                 None
         """
         if self.driver is not None:
-            self.logger.info("Starting recording process...")
+            logger.info("Starting recording process...")
             self.imgs = []
             recorder_thread = threading.Thread(target=self.__record_function, name="Screen Recorder", args=[self.imgs])
             recorder_thread.start()
@@ -126,7 +125,7 @@ class ScreenRecord:
                     pass
             if img is not None:
                 imgs.append(img)
-        self.logger.info("Stopping recording...")
+        logger.info("Stopping recording...")
         return imgs
 
 
@@ -202,7 +201,7 @@ class ScreenRecord:
             @return:
                 None
         """
-        self.logger.info("Compiling screen recording.")
+        logger.info("Compiling screen recording.")
         if height is None or width is None:
             try:
                 width, height = self.convert_to_img(files[0]).size
@@ -210,7 +209,7 @@ class ScreenRecord:
                 try:
                     width, height = Image.open(BytesIO(files[0])).size
                 except Exception:
-                    self.logger.error("Could not determine video resolution, exiting function...")
+                    logger.error("Could not determine video resolution, exiting function...")
                     return None
         video_format = self.video_format
         if video_format.lower() == "mp4":
@@ -219,9 +218,9 @@ class ScreenRecord:
             video_format = "divx"
         if os.path.exists(output_file):
             if overwrite:
-                self.logger.info(f"File '{output_file}' already exists, and will be overwritten.")
+                logger.info(f"File '{output_file}' already exists, and will be overwritten.")
             else:
-                self.logger.info(f"File '{output_file}' already exists, and will NOT be overwritten, exiting function.")
+                logger.info(f"File '{output_file}' already exists, and will NOT be overwritten, exiting function.")
                 return None
 
         start = default_timer()
@@ -242,7 +241,7 @@ class ScreenRecord:
         out.release()
         cv2.destroyAllWindows()
         end = default_timer()
-        self.logger.success(f"Video compilation complete - Duration: {str(timedelta(seconds=end - start))}")
+        logger.success(f"Video compilation complete - Duration: {str(timedelta(seconds=end - start))}")
 
     def img_path_list_to_cv2_img_list(self, imgs):
         """
@@ -285,17 +284,17 @@ class ScreenRecord:
                 None
         """
         if not os.path.exists(output_file):
-            self.logger.error(f"File '{output_file}' was NOT created.")
+            logger.error(f"File '{output_file}' was NOT created.")
         elif os.stat(output_file).st_size == 0:
-            self.logger.warning(f"File '{output_file}' was created but is EMPTY.")
+            logger.warning(f"File '{output_file}' was created but is EMPTY.")
         else:
-            self.logger.success(f"File '{output_file}' has been created and populated.")
+            logger.success(f"File '{output_file}' has been created - {humanize.naturalsize(os.stat(output_file).st_size)}.")
             if temp_location is not None:
-                self.logger.info(f"Removing temporary images at '{temp_location}'.")
+                logger.info(f"Removing temporary images at '{temp_location}'.")
                 try:
                     shutil.rmtree(temp_location, ignore_errors=True)
                 except Exception as e:
-                    self.logger.warning(f"There was an issue deleting the folder '{temp_location}' - {str(e)}")
+                    logger.warning(f"There was an issue deleting the folder '{temp_location}' - {str(e)}")
 
     # Credit for this method goes to user Greenstick from this StackOverflow post answer -
     # https://stackoverflow.com/questions/3173320/text-progress-bar-in-terminal-with-block-characters
