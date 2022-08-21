@@ -10,7 +10,7 @@ import pyautogui
 import glob
 import threading
 from loguru import logger
-
+import humanize
 
 class ScreenRecord:
     """
@@ -288,7 +288,7 @@ class ScreenRecord:
         elif os.stat(output_file).st_size == 0:
             logger.warning(f"File '{output_file}' was created but is EMPTY.")
         else:
-            logger.success(f"File '{output_file}' has been created and populated.")
+            logger.success(f"File '{output_file}' has been created - {humanize.naturalsize(os.stat(output_file).st_size)}.")
             if temp_location is not None:
                 logger.info(f"Removing temporary images at '{temp_location}'.")
                 try:
