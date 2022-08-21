@@ -50,7 +50,6 @@ class ScreenRecord:
             else:
                 logger.error("Attributes missing for class, video was not compiled.")
 
-
     def record_screen(self):
         """
             Begins screen recording, utilises attributes set within the class on initialisation.
